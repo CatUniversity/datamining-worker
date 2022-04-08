@@ -1,0 +1,17 @@
+name = "datamining"
+type = "webpack"
+
+account_id = ""
+workers_dev = true
+route = ""
+zone_id = ""
+compatibility_date = "2022-04-06"
+
+[build.upload]
+format = "modules"
+dir = "./src"
+main = "./index.js"
+
+[[build.upload.rules]]
+type = "ESModule"
+globs = ["**/*.js"]
