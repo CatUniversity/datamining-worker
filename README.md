@@ -1,6 +1,7 @@
 # Datamining Worker
 
-Totally not used a worker template, totally did not use [this template](https://github.com/cloudflare/worker-template/)
+Totally not used a worker template, totally did not use
+[this template](https://github.com/cloudflare/worker-template/)
 
 My regex hell for a simple middleware for datamining webhooks
 
@@ -12,5 +13,7 @@ Github/Discord-Datamining/Discord-Datamining (new comment)
 ```
 
 Example Commit
+> **NOTE:** Your webhooks should be owned by a bot, or else you won't be
+> be able to see the button
 
 ![Example Image](./webhook_demo.png)

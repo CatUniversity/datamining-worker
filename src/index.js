@@ -85,7 +85,7 @@ async function buildResponseJSON(comment) {
 
     // The description of the main embed
     const rEmoji = emojis[~~(Math.random() * emojis.length)]
-    const rTitle = `${rEmoji} New comment${media.length > 0
+    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${media.length > 0
         ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
         : ''
         }\n\n`
