@@ -17,7 +17,7 @@ addEventListener('fetch', event => {
 })
 
 /**
- * Respond with hello worker text
+ * Respond with appropriate data
  * @param {Request} request
  */
 async function handleRequest(request) {
@@ -25,27 +25,84 @@ async function handleRequest(request) {
     const params = new URLSearchParams(url.search)
 
     // Not really necessary, unless someone makes a manual request
-    if (request.method !== 'POST') return new Response('', { status: 405 })
+    if (request.method !== 'POST')
+        return new Response('Method not allowed', { status: 405 })
 
-    // Same as above, also used to verify if the request is from github,
-    // not the most elegant way but meh
-    if (request.headers.get('X-GitHub-Event') !== 'commit_comment')
-        return new Response('', { status: 200 })
-
-    // And ofc how can we forget the webhook url, isnt really limited to
-    // discord webhoook url but the body we return is in discord's format
+    // The webhook url, isnt really limited to discord webhoook url but
+    // the body we return is in discord's format
     if (!params.has('h'))
         return new Response('No webhook url found', { status: 400 })
 
-    // Creating the body
-    const json = await request.json()
-    const data = await buildResponseJSON(json.comment)
+    // Determine what and how to send
+    // 'commit_comment' -> form data
+    // 'push' aka commit -> normal json
+    let json
+    switch (request.headers.get('X-GitHub-Event')) {
+        case 'commit_comment':
+            // Creating the body
+            json = await request.json()
 
-    // Finally send!
-    return fetch(params.get('h'), {
-        method: 'POST',
-        body: data,
-    })
+            // Finally send!
+            return fetch(params.get('h'), {
+                method: 'POST',
+                body: await buildResponseFormData(json.comment),
+            })
+        case 'push':
+            // Since this is a simple embed, we don't need a separate
+            // function to form the body
+
+            json = await request.json()
+
+            // 962380103214587904
+            let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s) to \`${json.repository.full_name}\`\n`
+            let created_at
+            json.commits.forEach((commit, index) => {
+                description += `\n<:diff:962380103214587904> \`${commit.id.substring(
+                    0,
+                    7,
+                )}\` (${commit.author.username}) - ${commit.message}`
+                commit.added.length > 0
+                    ? (description += `Added:\n${commit.added.join('\n- ')}\n`)
+                    : null
+                commit.removed.length > 0
+                    ? (description += `Removed:\n${commit.removed.join(
+                        '\n- ',
+                    )}\n`)
+                    : null
+                commit.modified.length > 0
+                    ? (description += `Modified:\n${commit.modified.join(
+                        '\n- ',
+                    )}\n`)
+                    : null
+                if (index === json.commits.length - 1) {
+                    created_at = commit.timestamp
+                }
+            })
+            description =
+                description.length > 4096
+                    ? description.substring(0, 4096)
+                    : description
+            return fetch(params.get('h'), {
+                method: 'POST',
+                body: JSON.stringify({
+                    username: json.sender.login,
+                    avatar_url: json.sender.avatar_url,
+                    embeds: [
+                        {
+                            description: description,
+                            timestamp: created_at,
+                            footer: {
+                                text: 'Otter & Cat Universities',
+                                icon_url:
+                                    'https://cdn.discordapp.com/emojis/940320300132888586.png',
+                            },
+                        },
+                    ],
+                }),
+            })
+        default:
+            return new Response('Unsupported event', { status: 200 })
+    }
 }
 
 /**
@@ -53,7 +110,7 @@ async function handleRequest(request) {
  * @param {any} comment
  * @returns {FormData}
  */
-async function buildResponseJSON(comment) {
+async function buildResponseFormData(comment) {
     let formData = new FormData()
     let attachments = []
 
@@ -70,7 +127,7 @@ async function buildResponseJSON(comment) {
         media = media.slice(0, 10)
 
         for (let index = 0; index < media.length; index++) {
-            const url = media[index];
+            const url = media[index]
             let res = await fetch(url)
             let data = await res.blob()
             let name = url.split('/').pop()
