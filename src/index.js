@@ -1,5 +1,7 @@
 const { formatString } = require('./markdown.js')
 
+const webhooks = JSON.parse(WEBHOOK_URLS);
+
 // Random emojis, just for fun
 const emojis = [
     '<:WumpusHead:961561557022670848>',
@@ -21,17 +23,9 @@ addEventListener('fetch', event => {
  * @param {Request} request
  */
 async function handleRequest(request) {
-    const url = new URL(request.url)
-    const params = new URLSearchParams(url.search)
-
     // Not really necessary, unless someone makes a manual request
     if (request.method !== 'POST')
         return new Response('Method not allowed', { status: 405 })
-
-    // The webhook url, isnt really limited to discord webhoook url but
-    // the body we return is in discord's format
-    if (!params.has('h'))
-        return new Response('No webhook url found', { status: 400 })
 
     // Determine what and how to send
     // 'commit_comment' -> form data
@@ -43,17 +37,13 @@ async function handleRequest(request) {
             json = await request.json()
 
             // Finally send!
-            return fetch(params.get('h'), {
-                method: 'POST',
-                body: await buildResponseFormData(json.comment),
-            })
+            return await sendData(await buildResponseFormData(json.comment))
         case 'push':
             // Since this is a simple embed, we don't need a separate
             // function to form the body
 
             json = await request.json()
 
-            // 962380103214587904
             let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s) to \`${json.repository.full_name}\`\n`
             let created_at
             json.commits.forEach((commit, index) => {
@@ -82,27 +72,33 @@ async function handleRequest(request) {
                 description.length > 4096
                     ? description.substring(0, 4096)
                     : description
-            return fetch(params.get('h'), {
-                method: 'POST',
-                body: JSON.stringify({
-                    username: json.sender.login,
-                    avatar_url: json.sender.avatar_url,
-                    embeds: [
-                        {
-                            description: description,
-                            timestamp: created_at,
-                            footer: {
-                                text: 'Otter & Cat Universities',
-                                icon_url:
-                                    'https://cdn.discordapp.com/emojis/940320300132888586.png',
-                            },
+            return await sendData(JSON.stringify({
+                username: json.sender.login,
+                avatar_url: json.sender.avatar_url,
+                embeds: [
+                    {
+                        description: description,
+                        timestamp: created_at,
+                        footer: {
+                            text: 'Otter & Cat Universities',
+                            icon_url:
+                                'https://cdn.discordapp.com/emojis/940320300132888586.png',
                         },
-                    ],
-                }),
-            })
+                    },
+                ],
+            }))
         default:
             return new Response('Unsupported event', { status: 200 })
     }
+}
+
+async function sendData(data) {
+    webhooks.forEach(async webhook => {
+        await fetch(webhook, {
+            method: 'POST',
+            body: data,
+        })
+    })
 }
 
 /**
