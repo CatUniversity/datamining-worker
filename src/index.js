@@ -66,17 +66,19 @@ async function handleRequest(request) {
 
         console.log(`Received Push Payload: ${json}\nSending Data: ${data}`)
 
-        return await sendData(data)
+        return await sendData(data, true)
     }
     else {
         return new Response('Unsupported event', { status: 200 })
     }
 }
 
-async function sendData(data) {
+async function sendData(data, json = false) {
+    let headers = json ? { 'Content-Type': 'application/json' } : {}
     webhooks.forEach(async webhook => {
         let res = await fetch(webhook, {
             method: 'POST',
+            headers,
             body: data,
         })
         console.log(`Sent to ${webhook}: ${res.status} - ${await res.text()}`)
@@ -201,7 +203,7 @@ function buildResponseJSONData(json) {
 
     created_at = new Date(created_at)
 
-    return {
+    return JSON.stringify({
         username: json.sender.login,
         avatar_url: json.sender.avatar_url,
         embeds: [
@@ -215,5 +217,5 @@ function buildResponseJSONData(json) {
                 },
             },
         ],
-    }
+    })
 }
