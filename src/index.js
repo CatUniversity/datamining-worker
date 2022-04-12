@@ -1,6 +1,6 @@
 const { formatString } = require('./markdown.js')
 
-const webhooks = JSON.parse(WEBHOOK_URLS);
+const webhooks = JSON.parse(WEBHOOK_URLS)
 
 // Random emojis, just for fun
 const emojis = [
@@ -29,64 +29,17 @@ async function handleRequest(request) {
 
     // Determine what and how to send
     // 'commit_comment' -> form data
-    // 'push' aka commit -> normal json
+    // 'push' -> normal json
     let json
     switch (request.headers.get('X-GitHub-Event')) {
         case 'commit_comment':
-            // Creating the body
             json = await request.json()
 
-            // Finally send!
             return await sendData(await buildResponseFormData(json.comment))
         case 'push':
-            // Since this is a simple embed, we don't need a separate
-            // function to form the body
-
             json = await request.json()
 
-            let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s) to \`${json.repository.full_name}\`\n`
-            let created_at
-            json.commits.forEach((commit, index) => {
-                description += `\n<:diff:962380103214587904> \`${commit.id.substring(
-                    0,
-                    7,
-                )}\` (${commit.author.username}) - ${commit.message}\n`
-                commit.added.length > 0
-                    ? (description += `Added:\n${commit.added.join('\n- ')}\n`)
-                    : null
-                commit.removed.length > 0
-                    ? (description += `Removed:\n${commit.removed.join(
-                        '\n- ',
-                    )}\n`)
-                    : null
-                commit.modified.length > 0
-                    ? (description += `Modified:\n- ${commit.modified.join(
-                        '\n- ',
-                    )}`)
-                    : null
-                if (index === json.commits.length - 1) {
-                    created_at = commit.timestamp
-                }
-            })
-            description =
-                description.length > 4096
-                    ? description.substring(0, 4096)
-                    : description
-            return await sendData(JSON.stringify({
-                username: json.sender.login,
-                avatar_url: json.sender.avatar_url,
-                embeds: [
-                    {
-                        description: description,
-                        timestamp: created_at,
-                        footer: {
-                            text: 'Otter & Cat Universities',
-                            icon_url:
-                                'https://cdn.discordapp.com/emojis/940320300132888586.png',
-                        },
-                    },
-                ],
-            }))
+            return await sendData(buildResponseJSONData(json))
         default:
             return new Response('Unsupported event', { status: 200 })
     }
@@ -99,6 +52,7 @@ async function sendData(data) {
             body: data,
         })
     })
+    return Response('Succesful', { status: 200 })
 }
 
 /**
@@ -138,10 +92,11 @@ async function buildResponseFormData(comment) {
 
     // The description of the main embed
     const rEmoji = emojis[~~(Math.random() * emojis.length)]
-    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${media.length > 0
-        ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
-        : ''
-        }\n\n`
+    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${
+        media.length > 0
+            ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
+            : ''
+    }\n\n`
 
     // Trim to 4096 chars
     content =
@@ -188,4 +143,45 @@ async function buildResponseFormData(comment) {
 
     // Convert to JSON
     return formData
+}
+
+function buildResponseJSONData(json) {
+    let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s) to \`${json.repository.full_name}\`\n`
+    let created_at
+    json.commits.forEach((commit, index) => {
+        description += `\n<:diff:962380103214587904> \`${commit.id.substring(
+            0,
+            7,
+        )}\` (${commit.author.username}) - ${commit.message}\n`
+        commit.added.length > 0
+            ? (description += `Added:\n${commit.added.join('\n- ')}\n`)
+            : null
+        commit.removed.length > 0
+            ? (description += `Removed:\n${commit.removed.join('\n- ')}\n`)
+            : null
+        commit.modified.length > 0
+            ? (description += `Modified:\n- ${commit.modified.join('\n- ')}`)
+            : null
+        if (index === json.commits.length - 1) {
+            created_at = commit.timestamp
+        }
+    })
+    description =
+        description.length > 4096 ? description.substring(0, 4096) : description
+
+    return JSON.stringify({
+        username: json.sender.login,
+        avatar_url: json.sender.avatar_url,
+        embeds: [
+            {
+                description: description,
+                timestamp: created_at,
+                footer: {
+                    text: 'Otter & Cat Universities',
+                    icon_url:
+                        'https://cdn.discordapp.com/emojis/940320300132888586.png',
+                },
+            },
+        ],
+    })
 }
