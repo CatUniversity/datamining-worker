@@ -75,15 +75,21 @@ async function handleRequest(request) {
 
 async function sendData(data, json = false) {
     let headers = json ? { 'Content-Type': 'application/json' } : {}
+
+    let status = 200
+    let body = {}
+
     webhooks.forEach(async webhook => {
         let res = await fetch(webhook, {
             method: 'POST',
             headers,
             body: data,
         })
+        status = res.status > status ? res.status : status
+        body = status === res.status ? await res.json() : body
         console.log(`Sent to ${webhook}: ${res.status} - ${await res.text()}`)
     })
-    return new Response('Succesful', { status: 200 })
+    return new Response(body, { status })
 }
 
 /**
