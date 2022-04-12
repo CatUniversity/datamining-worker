@@ -50,7 +50,7 @@ async function handleRequest(request) {
                 description += `\n<:diff:962380103214587904> \`${commit.id.substring(
                     0,
                     7,
-                )}\` (${commit.author.username}) - ${commit.message}`
+                )}\` (${commit.author.username}) - ${commit.message}\n`
                 commit.added.length > 0
                     ? (description += `Added:\n${commit.added.join('\n- ')}\n`)
                     : null
@@ -60,9 +60,9 @@ async function handleRequest(request) {
                     )}\n`)
                     : null
                 commit.modified.length > 0
-                    ? (description += `Modified:\n${commit.modified.join(
+                    ? (description += `Modified:\n- ${commit.modified.join(
                         '\n- ',
-                    )}\n`)
+                    )}`)
                     : null
                 if (index === json.commits.length - 1) {
                     created_at = commit.timestamp
