@@ -1,6 +1,7 @@
 const { formatString } = require('./markdown.js')
 
 const webhooks = JSON.parse(WEBHOOK_URLS)
+const auth = AUTHKEY
 
 // Random emojis, just for fun
 const emojis = [
@@ -23,6 +24,24 @@ addEventListener('fetch', event => {
  * @param {Request} request
  */
 async function handleRequest(request) {
+    let { pathname } = new URL(request.url)
+
+    if (pathname === '/webhooks') {
+        if (request.headers.get("Authorization") !== auth) {
+            return new Response('Unauthorized', { status: 401 })
+        }
+        if (request.method === 'GET') {
+            return new Response(JSON.stringify(webhooks), {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+        } else {
+            return new Response('Method not allowed', { status: 405 })
+        }
+    }
+
     // Not really necessary, unless someone makes a manual request
     if (request.method !== 'POST')
         return new Response('Method not allowed', { status: 405 })
@@ -92,17 +111,16 @@ async function buildResponseFormData(comment) {
 
     // The description of the main embed
     const rEmoji = emojis[~~(Math.random() * emojis.length)]
-    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${
-        media.length > 0
-            ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
-            : ''
-    }\n\n`
+    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${media.length > 0
+        ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
+        : ''
+        }\n\n`
 
     // Trim to 4096 chars
     content =
         rTitle +
         (content.length > 4096 - rTitle.length
-            ? content.substring(0, 4090 - rTitle.length) + '...```'
+            ? content.slice(0, 4090 - rTitle.length) + '...```'
             : content)
 
     // Final payload
@@ -149,33 +167,37 @@ function buildResponseJSONData(json) {
     let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s) to \`${json.repository.full_name}\`\n`
     let created_at
     json.commits.forEach((commit, index) => {
-        description += `\n<:diff:962380103214587904> \`${commit.id.substring(
+        description += `\n<:diff:962380103214587904> \`${commit.id.slice(
             0,
             7,
         )}\` (${commit.author.username}) - ${commit.message}\n`
         commit.added.length > 0
-            ? (description += `Added:\n${commit.added.join('\n- ')}\n`)
+            ? (description += `Added:\n- ${commit.added.join('\n- ')}\n`)
             : null
         commit.removed.length > 0
-            ? (description += `Removed:\n${commit.removed.join('\n- ')}\n`)
+            ? (description += `Removed:\n- ${commit.removed.join('\n- ')}\n`)
             : null
         commit.modified.length > 0
-            ? (description += `Modified:\n- ${commit.modified.join('\n- ')}`)
+            ? (description += `Modified:\n- ${commit.modified.join('\n- ')}\n`)
             : null
         if (index === json.commits.length - 1) {
             created_at = commit.timestamp
         }
     })
     description =
-        description.length > 4096 ? description.substring(0, 4096) : description
+        description.trim().length > 4096
+            ? description.trim().slice(0, 4096)
+            : description.trim()
+
+    created_at = new Date(created_at)
 
     return JSON.stringify({
         username: json.sender.login,
         avatar_url: json.sender.avatar_url,
         embeds: [
             {
-                description: description,
-                timestamp: created_at,
+                description,
+                timestamp: created_at.toISOString(),
                 footer: {
                     text: 'Otter & Cat Universities',
                     icon_url:

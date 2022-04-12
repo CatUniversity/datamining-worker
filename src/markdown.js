@@ -30,7 +30,7 @@ function formatString(src, headings) {
                 '_suffixToNotCauseIssuesWithNormalData_' +
                 ~~(Math.random() * 100)
             ignore[idx] = match.slice(0, match.length - p4.length)
-            return idx += p4
+            return (idx += p4)
         })
         .replace(regexHell.codeInline, match => {
             idx =
