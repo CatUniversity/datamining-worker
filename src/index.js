@@ -201,7 +201,7 @@ function buildResponseJSONData(json) {
 
     created_at = new Date(created_at)
 
-    return JSON.stringify({
+    return {
         username: json.sender.login,
         avatar_url: json.sender.avatar_url,
         embeds: [
@@ -215,5 +215,5 @@ function buildResponseJSONData(json) {
                 },
             },
         ],
-    })
+    }
 }
