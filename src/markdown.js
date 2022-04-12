@@ -35,7 +35,7 @@ function formatString(src, headings) {
         .replace(regexHell.codeInline, match => {
             idx =
                 Object.keys(ignore).length +
-                'suffixToNotCauseIssuesWithNormalData' +
+                '_suffixToNotCauseIssuesWithNormalData_' +
                 ~~(Math.random() * 100)
             ignore[idx] = match
             return idx

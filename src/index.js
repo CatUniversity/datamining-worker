@@ -50,15 +50,22 @@ async function handleRequest(request) {
     // 'commit_comment' -> form data
     // 'push' -> normal json
     let json
+    let data
     switch (request.headers.get('X-GitHub-Event')) {
         case 'commit_comment':
             json = await request.json()
+            data = await buildResponseFormData(json.comment)
 
-            return await sendData(await buildResponseFormData(json.comment))
+            console.log(`Received Comment Payload: ${json}\nSending Data: ${data}`)
+
+            return await sendData(data)
         case 'push':
             json = await request.json()
+            data = buildResponseJSONData(json)
 
-            return await sendData(buildResponseJSONData(json))
+            console.log(`Received Push Payload: ${json}\nSending Data: ${data}`)
+
+            return await sendData(data)
         default:
             return new Response('Unsupported event', { status: 200 })
     }
@@ -66,10 +73,11 @@ async function handleRequest(request) {
 
 async function sendData(data) {
     webhooks.forEach(async webhook => {
-        await fetch(webhook, {
+        let res = await fetch(webhook, {
             method: 'POST',
             body: data,
         })
+        console.log(`Sent to ${webhook}: ${res.status} - ${await res.text()}`)
     })
     return Response('Succesful', { status: 200 })
 }
