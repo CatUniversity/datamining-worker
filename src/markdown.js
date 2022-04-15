@@ -6,7 +6,7 @@ Object.defineProperty(exports, '__esModule', { value: true })
 
 const regexHell = {
     heading: /^ {0,3}(#{1,6})(?=\s|$)(.*)(\n+|$)/gm,
-    url: /https?:\/\/[^`\n\r\n\t\f\v ]+\.(?:png|jpg|jpeg|webp|svg|mp4|gif)(?:\b|])/g,
+    url: /https?:\/\/[^`\n\r\n\t\f\v ]+\.(?:png|jpg|jpeg|webp|svg|mp4|gif)/g,
     codeBlock: /^ *(`{3,}|~{3,}) *(\S+)? *\n([\s\S]+?)\s*\1 *(\n+|$)/gm,
     codeInline: /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/gm,
 }
