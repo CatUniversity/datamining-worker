@@ -146,10 +146,15 @@ async function buildCommentResponseData(comment) {
         for (let index = 0; index < media.length; index++) {
             const url = media[index]
             let res = await fetch(url)
-            let data = await res.blob()
+            let ImageData = await res.blob()
             let name = url.split('/').pop()
 
-            formData.append(`files[${index}]`, data, name)
+            // techno's util returns a png
+            if (name.endsWith('svg')) {
+                name = name += ".png"
+            }
+
+            formData.append(`files[${index}]`, ImageData, name)
             attachments.push({
                 id: index,
                 filename: name,
