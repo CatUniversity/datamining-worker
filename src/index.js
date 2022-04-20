@@ -80,10 +80,14 @@ async function handleRequest(request) {
         return new Response('Unsupported event', { status: 501 })
     }
 
+    if (pathname == "/debug") {
+        return await sendData(data, true)
+    }
+
     return await sendData(data)
 }
 
-async function sendData(data) {
+async function sendData(data, debug = false) {
     let failed = {}
     webhooks.forEach(async (webhook, i) => {
         let res = await fetch(webhook, {
@@ -103,6 +107,10 @@ async function sendData(data) {
 
     if (failed !== '{}') {
         return new Response(failed, { status: 500 })
+    }
+
+    if (debug) {
+        return new Response(data, { status: 200 })
     }
 
     return new Response('Success', { status: 200 })
