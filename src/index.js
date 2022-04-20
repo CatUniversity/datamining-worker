@@ -27,11 +27,11 @@ async function handleRequest(request) {
     let { pathname } = new URL(request.url)
 
     if (pathname === '/webhooks') {
-        if (request.headers.get("Authorization") !== auth) {
+        if (request.headers.get('Authorization') !== auth) {
             return new Response('Unauthorized', { status: 401 })
         }
         if (request.method === 'GET') {
-            return new Response(JSON.stringify(webhooks), {
+            return new Response(WEBHOOK_URLS, {
                 status: 200,
                 headers: {
                     'Content-Type': 'application/json',
@@ -47,49 +47,41 @@ async function handleRequest(request) {
         return new Response('Method not allowed', { status: 405 })
 
     // Determine what and how to send
-    // 'commit_comment' -> form data
-    // 'push' -> normal json
-    let json
+    // 'commit_comment' -> form data with parsed images if present
+    // 'push' -> form data but less complex
+    let json = await request.json()
+    console.log(json)
+
+    if (json.repository.full_name !== 'Discord-Datamining/Discord-Datamining') {
+        return new Response('Not for this repo, please dont abuse the worker', {
+            status: 403,
+        })
+    }
+
     let data
     ghEvent = request.headers.get('X-GitHub-Event')
     if (ghEvent === 'commit_comment') {
-        json = await request.json()
-        data = await buildResponseFormData(json.comment)
-
+        data = await buildCommentResponseData(json.comment)
         console.log(`Received Comment Payload: ${json}\nSending Data: ${data}`)
-
-        return await sendData(data)
-    }
-    else if (ghEvent === 'commit_comment') {
-        json = await request.json()
-        data = buildResponseJSONData(json)
-
+    } else if (ghEvent === 'push') {
+        data = buildCommitResponseData(json)
         console.log(`Received Push Payload: ${json}\nSending Data: ${data}`)
+    } else {
+        return new Response('Unsupported event', { status: 400 })
+    }
 
-        return await sendData(data, true)
-    }
-    else {
-        return new Response('Unsupported event', { status: 200 })
-    }
+    return await sendData(data)
 }
 
-async function sendData(data, json = false) {
-    let headers = json ? { 'Content-Type': 'application/json' } : {}
-
-    let status = 200
-    let body = {}
-
+async function sendData(data) {
     webhooks.forEach(async webhook => {
         let res = await fetch(webhook, {
             method: 'POST',
-            headers,
             body: data,
         })
-        status = res.status > status ? res.status : status
-        body = status === res.status ? await res.json() : body
         console.log(`Sent to ${webhook}: ${res.status} - ${await res.text()}`)
     })
-    return new Response(body, { status })
+    return new Response('Success', { status: 200 })
 }
 
 /**
@@ -97,7 +89,7 @@ async function sendData(data, json = false) {
  * @param {any} comment
  * @returns {FormData}
  */
-async function buildResponseFormData(comment) {
+async function buildCommentResponseData(comment) {
     let formData = new FormData()
     let attachments = []
 
@@ -129,10 +121,11 @@ async function buildResponseFormData(comment) {
 
     // The description of the main embed
     const rEmoji = emojis[~~(Math.random() * emojis.length)]
-    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${media.length > 0
-        ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
-        : ''
-        }\n\n`
+    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${
+        media.length > 0
+            ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
+            : ''
+    }\n\n`
 
     // Trim to 4096 chars
     content =
@@ -177,12 +170,12 @@ async function buildResponseFormData(comment) {
 
     formData.append('payload_json', JSON.stringify(payload))
 
-    // Convert to JSON
     return formData
 }
 
-function buildResponseJSONData(json) {
-    let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s) to \`${json.repository.full_name}\`\n`
+function buildCommitResponseData(json) {
+    let formData = new FormData()
+    let description = `<:push:962379954241273946> ${json.pusher.name} pushed ${json.commits.length} commit(s)\n`
     let created_at
     json.commits.forEach((commit, index) => {
         description += `\n<:diff:962380103214587904> \`${commit.id.slice(
@@ -190,13 +183,13 @@ function buildResponseJSONData(json) {
             7,
         )}\` (${commit.author.username}) - ${commit.message}\n`
         commit.added.length > 0
-            ? (description += `Added:\n- ${commit.added.join('\n- ')}\n`)
+            ? (description += `**Added**:\n\`${commit.added.join(',')}\`\n`)
             : null
         commit.removed.length > 0
-            ? (description += `Removed:\n- ${commit.removed.join('\n- ')}\n`)
+            ? (description += `**Removed**:\n\`${commit.removed.join(',')}\`\n`)
             : null
         commit.modified.length > 0
-            ? (description += `Modified:\n- ${commit.modified.join('\n- ')}\n`)
+            ? (description += `**Modified**:\n\`${commit.modified.join(',')}\`\n`)
             : null
         if (index === json.commits.length - 1) {
             created_at = commit.timestamp
@@ -209,19 +202,24 @@ function buildResponseJSONData(json) {
 
     created_at = new Date(created_at)
 
-    return JSON.stringify({
-        username: json.sender.login,
-        avatar_url: json.sender.avatar_url,
-        embeds: [
-            {
-                description,
-                timestamp: created_at.toISOString(),
-                footer: {
-                    text: 'Otter & Cat Universities',
-                    icon_url:
-                        'https://cdn.discordapp.com/emojis/940320300132888586.png',
+    formData.append(
+        'payload_json',
+        JSON.stringify({
+            username: json.sender.login,
+            avatar_url: json.sender.avatar_url,
+            embeds: [
+                {
+                    description,
+                    timestamp: created_at.toISOString(),
+                    footer: {
+                        text: 'Otter & Cat Universities',
+                        icon_url:
+                            'https://cdn.discordapp.com/emojis/940320300132888586.png',
+                    },
                 },
-            },
-        ],
-    })
+            ],
+        }),
+    )
+
+    return formData
 }

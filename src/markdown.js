@@ -47,12 +47,12 @@ function formatString(src, headings) {
     let urls = formattedString.match(regexHell.url)
     urls
         ? urls.forEach(url => {
-            mediaLinks.push(
-                url.endsWith('svg')
-                    ? `https://util.bruhmomentlol.repl.co/svg?q=${url}`
-                    : url,
-            )
-        })
+              mediaLinks.push(
+                  url.endsWith('svg')
+                      ? `https://util.bruhmomentlol.repl.co/svg?q=${url}`
+                      : url,
+              )
+          })
         : null
 
     Object.keys(ignore).forEach(key => {
