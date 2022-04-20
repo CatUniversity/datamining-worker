@@ -81,6 +81,9 @@ async function handleRequest(request) {
     }
 
     if (pathname == "/debug") {
+        if (request.headers.get('Authorization') !== auth) {
+            return new Response('Unauthorized', { status: 401 })
+        }
         return await sendData(data, true)
     }
 
