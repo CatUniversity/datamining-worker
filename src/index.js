@@ -43,6 +43,7 @@ async function handleRequest(request) {
         if (request.headers.get('Authorization') !== auth) {
             return new Response('Unauthorized', { status: 401 })
         }
+
         if (request.method === 'GET') {
             return new Response(WEBHOOK_URLS, {
                 status: 200,
@@ -50,9 +51,8 @@ async function handleRequest(request) {
                     'Content-Type': 'application/json',
                 },
             })
-        } else {
-            return new Response('Method not allowed', { status: 405 })
         }
+        return new Response('Method not allowed', { status: 405 })
     }
 
     // Not really necessary, unless someone makes a manual request
@@ -63,7 +63,6 @@ async function handleRequest(request) {
     // 'commit_comment' -> form data with parsed images if present
     // 'push' -> form data but less complex
     let json = await request.json()
-    console.log(json)
 
     if (json.repository.full_name !== 'Discord-Datamining/Discord-Datamining') {
         return new Response('Not for this repo, please dont abuse the worker', {
@@ -75,12 +74,10 @@ async function handleRequest(request) {
     ghEvent = request.headers.get('X-GitHub-Event')
     if (ghEvent === 'commit_comment') {
         data = await buildCommentResponseData(json.comment)
-        console.log(`Received Comment Payload: ${json}\nSending Data: ${data}`)
     } else if (ghEvent === 'push') {
         data = buildCommitResponseData(json)
-        console.log(`Received Push Payload: ${json}\nSending Data: ${data}`)
     } else {
-        return new Response('Unsupported event', { status: 400 })
+        return new Response('Unsupported event', { status: 501 })
     }
 
     return await sendData(data)
@@ -88,8 +85,8 @@ async function handleRequest(request) {
 
 async function sendData(data) {
     let failed = {}
-    webhooks.forEach(async webhook => {
-        let res = await fetch((webhook, i), {
+    webhooks.forEach(async (webhook, i) => {
+        let res = await fetch(webhook, {
             method: 'POST',
             body: data,
         })
@@ -100,7 +97,6 @@ async function sendData(data) {
             )
             failed[`webhook-${i}`] = { status: res.status, text }
         }
-        console.log(`Sent to ${webhook}: ${res.status} - ${text}`)
     })
 
     failed = JSON.parse(failed)
