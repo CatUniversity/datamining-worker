@@ -99,7 +99,7 @@ async function sendData(data) {
         }
     })
 
-    failed = JSON.parse(failed)
+    failed = JSON.stringify(failed)
 
     if (failed !== '{}') {
         return new Response(failed, { status: 500 })
