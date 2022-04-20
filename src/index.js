@@ -16,8 +16,21 @@ const emojis = [
 ]
 
 addEventListener('fetch', event => {
-    event.respondWith(handleRequest(event.request))
+    event.respondWith(handleRequestWithCatch(event.request))
 })
+
+/**
+ * Respond with appropriate data
+ * @param {Request} request
+ */
+async function handleRequestWithCatch(request) {
+    try {
+        return await handleRequest(request)
+    } catch (e) {
+        console.error(e)
+        return new Response(`Error: ${e}`, { status: 500 })
+    }
+}
 
 /**
  * Respond with appropriate data
@@ -74,13 +87,28 @@ async function handleRequest(request) {
 }
 
 async function sendData(data) {
+    let failed = {}
     webhooks.forEach(async webhook => {
-        let res = await fetch(webhook, {
+        let res = await fetch((webhook, i), {
             method: 'POST',
             body: data,
         })
-        console.log(`Sent to ${webhook}: ${res.status} - ${await res.text()}`)
+        let text = await res.text()
+        if (!res.ok) {
+            console.error(
+                `Error sending to ${webhook}, status: ${res.status}, reason: ${text}`,
+            )
+            failed[`webhook-${i}`] = { status: res.status, text }
+        }
+        console.log(`Sent to ${webhook}: ${res.status} - ${text}`)
     })
+
+    failed = JSON.parse(failed)
+
+    if (failed !== '{}') {
+        return new Response(failed, { status: 500 })
+    }
+
     return new Response('Success', { status: 200 })
 }
 
@@ -121,11 +149,10 @@ async function buildCommentResponseData(comment) {
 
     // The description of the main embed
     const rEmoji = emojis[~~(Math.random() * emojis.length)]
-    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${
-        media.length > 0
-            ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
-            : ''
-    }\n\n`
+    const rTitle = `${rEmoji} New comment on \`${comment.commit_id}\`${media.length > 0
+        ? '\n<:MesssageAttachment:961660264917368873> Attachments included'
+        : ''
+        }\n\n`
 
     // Trim to 4096 chars
     content =
@@ -189,7 +216,9 @@ function buildCommitResponseData(json) {
             ? (description += `**Removed**:\n\`${commit.removed.join(',')}\`\n`)
             : null
         commit.modified.length > 0
-            ? (description += `**Modified**:\n\`${commit.modified.join(',')}\`\n`)
+            ? (description += `**Modified**:\n\`${commit.modified.join(
+                ',',
+            )}\`\n`)
             : null
         if (index === json.commits.length - 1) {
             created_at = commit.timestamp
