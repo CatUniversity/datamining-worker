@@ -89,28 +89,31 @@ async function handleRequest(request) {
 
 async function sendData(data, debug = false) {
     let failed = {}
-    webhooks.forEach(async (webhook, i) => {
-        let res = await fetch(webhook, {
+    if (!debug) {
+        webhooks.forEach(async (webhook, i) => {
+            let res = await fetch(webhook, {
+                method: 'POST',
+                body: data,
+            })
+            let text = await res.text()
+            if (!res.ok) {
+                console.error(
+                    `Error sending to ${webhook}, status: ${res.status}, reason: ${text}`,
+                )
+                failed[`webhook-${i}`] = { status: res.status, text }
+            }
+        })
+    } else {
+        return await fetch(DEBUG_URL, {
             method: 'POST',
             body: data,
         })
-        let text = await res.text()
-        if (!res.ok) {
-            console.error(
-                `Error sending to ${webhook}, status: ${res.status}, reason: ${text}`,
-            )
-            failed[`webhook-${i}`] = { status: res.status, text }
-        }
-    })
+    }
 
     failed = JSON.stringify(failed)
 
     if (failed !== '{}') {
         return new Response(failed, { status: 500 })
-    }
-
-    if (debug) {
-        return new Response(data, { status: 200 })
     }
 
     return new Response('Success', { status: 200 })
