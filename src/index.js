@@ -262,6 +262,19 @@ function buildCommitResponseData(json) {
                     },
                 },
             ],
+            components: [
+                {
+                    type: 1,
+                    components: [
+                        {
+                            type: 2,
+                            label: 'View Commit',
+                            url: json.head_commit.url,
+                            style: 5,
+                        },
+                    ],
+                },
+            ],
         }),
     )
 
