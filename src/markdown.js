@@ -21,25 +21,8 @@ const regexHell = {
 function formatString(src, headings) {
     headings = headings || {}
     let mediaLinks = []
-    let ignore = {}
 
     let formattedString = src
-        .replace(regexHell.codeBlock, (match, _1, _2, _3, p4) => {
-            idx =
-                Object.keys(ignore).length +
-                '_suffixToNotCauseIssuesWithNormalData_' +
-                ~~(Math.random() * 100)
-            ignore[idx] = match.slice(0, match.length - p4.length)
-            return (idx += p4)
-        })
-        .replace(regexHell.codeInline, match => {
-            idx =
-                Object.keys(ignore).length +
-                '_suffixToNotCauseIssuesWithNormalData_' +
-                ~~(Math.random() * 100)
-            ignore[idx] = match
-            return idx
-        })
         .replace(regexHell.heading, (_m, _1, p2, p3) => {
             return `**${headings[p2.trim()] || p2.trim()}**${p3}`
         })
@@ -47,17 +30,13 @@ function formatString(src, headings) {
     let urls = formattedString.match(regexHell.url)
     urls
         ? urls.forEach(url => {
-              mediaLinks.push(
-                  url.endsWith('svg')
-                      ? `https://util.bruhmomentlol.repl.co/svg?q=${url}`
-                      : url,
-              )
-          })
+            mediaLinks.push(
+                url.endsWith('svg')
+                    ? `https://util.bruhmomentlol.repl.co/svg?q=${url}`
+                    : url,
+            )
+        })
         : null
-
-    Object.keys(ignore).forEach(key => {
-        formattedString = formattedString.replace(key, ignore[key])
-    })
 
     return [formattedString, mediaLinks]
 }
