@@ -68,7 +68,7 @@ export async function handleComment(data: any, urls: Array<string>) {
 
     if (mediaLinks.length > 0) {
         response.embeds[0].description += "\n<:MesssageAttachment:961660264917368873> Attachments included"
-        mediaLinks = mediaLinks.slice(0, 10)
+        mediaLinks = mediaLinks.slice(0, 9)
 
         for (const url of mediaLinks) {
             response.embeds.push({
@@ -88,7 +88,7 @@ export async function handleComment(data: any, urls: Array<string>) {
     let to_send = JSON.stringify(response);
 
     for (const url of urls) {
-        console.log(`Sending FormData to ${url}`)
+        console.log(`Sending ${to_send} to ${url}`)
         let res = await fetch(url, {
             method: "POST",
             headers: {
