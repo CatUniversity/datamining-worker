@@ -134,11 +134,11 @@ export async function handleCommit(data: any, urls: Array<string>) {
         ],
     }
 
-    let description = `<: push: 962379954241273946 > ${data.pusher.name} pushed ${data.commits.length} commit${data.commits.length > 1 ? "s" : ""}\n`;
+    let description = `<:push:962379954241273946> ${data.pusher.name} pushed ${data.commits.length} commit${data.commits.length > 1 ? "s" : ""}\n`;
     let created_at: string;
 
     data.commits.forEach((commit, index: number) => {
-        description += `\n <: diff: 962380103214587904 > \`${commit.id.slice(0, 7)}\` (${commit.author.username}) - ${commit.message}\n`
+        description += `\n <:diff:962380103214587904> \`${commit.id.slice(0, 7)}\` (${commit.author.username}) - ${commit.message}\n`
         commit.added.length > 0 ? (description += `**Added**:\n\`${commit.added.join(',')}\`\n`) : null
         commit.removed.length > 0 ? (description += `**Removed**:\n\`${commit.removed.join(',')}\`\n`) : null
         commit.modified.length > 0 ? (description += `**Modified**:\n\`${commit.modified.join(',')}\`\n`) : null
