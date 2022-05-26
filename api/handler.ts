@@ -21,7 +21,7 @@ const TITLE_EMOJIS = {
 function formatComment(comment: string): [string, Array<string>] {
     let mediaLinks = []
     comment = comment.replace(/^#{1,6} (.*)$/gm, (_, p1) => {
-        return `**${TITLE_EMOJIS[p1] + " " || ""}${p1}**`
+        return `**${typeof TITLE_EMOJIS[p1] !== "undefined" ? TITLE_EMOJIS[p1] + " " : ""}${p1}**`
     })
     let urls = comment.match(/https?:\/\/[^`\n\s]+?\.(?:png|jpg|jpeg|webp|svg|mp4|gif)/g)
     urls ? urls.forEach(url => {
