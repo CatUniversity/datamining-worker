@@ -20,7 +20,7 @@ const TITLE_EMOJIS = {
 
 function formatComment(comment: string): [string, Array<string>] {
     let mediaLinks = []
-    comment = comment.replace(/^#{1,6} (.*)/g, (_, p1) => {
+    comment = comment.replace(/^#{1,6} (.*)$/gm, (_, p1) => {
         return `**${TITLE_EMOJIS[p1] + " " || ""}${p1}**`
     })
     let urls = comment.match(/https?:\/\/[^`\n\s]+?\.(?:png|jpg|jpeg|webp|svg|mp4|gif)/g)
@@ -72,6 +72,7 @@ export async function handleComment(data: any, urls: Array<string>) {
 
         for (const url of mediaLinks) {
             response.embeds.push({
+                title: `\`${url.split("/").pop()}\``,
                 image: {
                     url
                 }
