@@ -45,7 +45,7 @@ export async function handleComment(data: any, urls: Array<string>) {
                 footer: {
                     text: 'Cat University',
                     icon_url:
-                        'https://cdn.discordapp.com/avatars/890186631645106197/3a064ad5e211e2aaac80352313a12b97.png',
+                        'https://cdn.discordapp.com/icons/886481241656922122/13b5042baf7568ddd31ecc36611fbe1d.png',
                 },
             },
         ],
@@ -116,7 +116,7 @@ export async function handleCommit(data: any, urls: Array<string>) {
                 footer: {
                     text: 'Cat University',
                     icon_url:
-                        'https://cdn.discordapp.com/avatars/890186631645106197/3a064ad5e211e2aaac80352313a12b97.png',
+                        'https://cdn.discordapp.com/icons/886481241656922122/13b5042baf7568ddd31ecc36611fbe1d.png',
                 },
             },
         ],
