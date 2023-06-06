@@ -17,7 +17,7 @@ pub async fn handle(comment: Comment) -> Result<Response<Body>, Error> {
     let body = comment.comment.body;
 
     let formatted_body = HEADINGS.replace_all(&body, |caps: &Captures| {
-        let content = match &caps[1] {
+        let content = match &caps[2] {
             "Strings" => "<:_:961596009924923413> Strings",
             "Added Experiments" => "<:_:961660535718420490> Added Experiments",
             "Removed Experiments" => "<:_:961660535718420490> Removed Experiments",
@@ -28,7 +28,7 @@ pub async fn handle(comment: Comment) -> Result<Response<Body>, Error> {
         if caps[1].len() > 3 {
             format!("**{content}**")
         } else {
-            format!("{octothorpes}{content}", octothorpes = &caps[1])
+            format!("{octothorpes} {content}", octothorpes = &caps[1])
         }
     });
 
