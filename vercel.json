@@ -4,5 +4,10 @@
             "source": "/",
             "destination": "/index.html"
         }
-    ]
+    ],
+    "functions": {
+        "api/index.rs": {
+            "runtime": "vercel-rust@4.0.1"
+        }
+    }
 }
