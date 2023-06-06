@@ -50,12 +50,13 @@ pub async fn send_json(json: &str) -> Result<Response<Body>, Error> {
     };
 
     for url in urls {
-        CLIENT
+        let result = CLIENT
             .post(url)
             .header("Content-Type", "application/json")
             .body(json.to_owned())
             .send()
             .await?;
+        println!("{result:#?}")
     }
 
     Ok(create_message(
