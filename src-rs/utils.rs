@@ -50,13 +50,12 @@ pub async fn send_json(json: &str) -> Result<Response<Body>, Error> {
     };
 
     for url in urls {
-        let result = CLIENT
-            .post(url)
+        let _ = CLIENT
+            .post(format!("https://discord.com/api/v10/webhooks/{url}"))
             .header("Content-Type", "application/json")
             .body(json.to_owned())
             .send()
-            .await?;
-        println!("{result:#?}")
+            .await;
     }
 
     Ok(create_message(
