@@ -17,7 +17,7 @@ const EMOJIS: &[&str] = &[
     "<:_:961595797890273341>", // Radio
 ];
 
-const CLIENT: Lazy<Client> = Lazy::new(|| Client::new());
+pub const CLIENT: Lazy<Client> = Lazy::new(|| Client::new());
 
 pub fn create_message(status: StatusCode, message: &str) -> Result<Response<Body>, http::Error> {
     Response::builder()

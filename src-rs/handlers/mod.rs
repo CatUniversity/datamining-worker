@@ -11,36 +11,39 @@ use crate::{
 };
 
 pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
-    if request.method() != Method::POST {
-        return Ok(create_message(
-            StatusCode::METHOD_NOT_ALLOWED,
-            "Method not allowed",
-        )?);
-    }
+    match *request.method() {
+        Method::POST => {
+            let event = if let Some(header) = request.headers().get("x-github-event") {
+                header.to_str()?
+            } else {
+                return Ok(create_message(
+                    StatusCode::BAD_REQUEST,
+                    "Expected a x-github-event header",
+                )?);
+            };
+            let body = request.body();
 
-    let event = if let Some(header) = request.headers().get("x-github-event") {
-        header.to_str()?
-    } else {
-        return Ok(create_message(
-            StatusCode::BAD_REQUEST,
-            "Expected a x-github-event header",
-        )?);
-    };
-    let body = request.body();
-
-    match event {
-        "push" => {
-            let push = from_slice::<Push>(body)?;
-            push::handle(push).await
-        }
-        "commit_comment" => {
-            let comment = from_slice::<Comment>(body)?;
-            comment::handle(comment).await
+            match event {
+                "push" => {
+                    let push = from_slice::<Push>(body)?;
+                    push::handle(push).await
+                }
+                "commit_comment" => {
+                    let comment = from_slice::<Comment>(body)?;
+                    comment::handle(comment).await
+                }
+                _ => {
+                    return Ok(create_message(
+                        StatusCode::BAD_REQUEST,
+                        "Only supported events are 'push' and 'commit_comment'",
+                    )?);
+                }
+            }
         }
         _ => {
             return Ok(create_message(
-                StatusCode::BAD_REQUEST,
-                "Only supported events are 'push' and 'commit_comment'",
+                StatusCode::METHOD_NOT_ALLOWED,
+                "Method not allowed",
             )?);
         }
     }

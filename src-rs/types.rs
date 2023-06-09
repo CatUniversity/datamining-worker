@@ -47,6 +47,9 @@ pub struct InnerComment {
     pub created_at: String,
     pub html_url: String,
     pub body: String,
+    #[serde(default)]
+    pub body_html: String,
+    pub url: String,
 }
 
 #[derive(Deserialize)]

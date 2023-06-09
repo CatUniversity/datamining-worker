@@ -1,17 +1,17 @@
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use serde_json::json;
 use vercel_runtime::{Body, Error, Response, StatusCode};
 
 use crate::{
-    types::Comment,
-    utils::{create_message, get_random_emoji, send_json},
+    types::{Comment, InnerComment},
+    utils::{create_message, get_random_emoji, send_json, CLIENT},
 };
 
 const HEADINGS: Lazy<Regex> = Lazy::new(|| Regex::new(r#"(^#{1,6})\s+(.+)"#).unwrap());
-const MEDIA: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"https?://(?:(?:github\.com/Discord-Datamining/Discord-Datamining/assets/\b(?:[-a-zA-Z0-9@:%_\+.~#?&/=]*))|(?:[^\n\s]+?\.(?:png|jpg|jpeg|webp|svg|mp4|gif)))"#).unwrap()
-});
+const MEDIA: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"https?://[^\n\s]+?\.(?:png|jpg|jpeg|webp|svg|mp4|gif)"#).unwrap());
 
 pub async fn handle(comment: Comment) -> Result<Response<Body>, Error> {
     let body = comment.comment.body;
@@ -54,7 +54,16 @@ pub async fn handle(comment: Comment) -> Result<Response<Body>, Error> {
         },
     })];
 
-    for mat in MEDIA.find_iter(&body).take(9) {
+    // Parsing media urls in the html form is much more sane
+    let html_comment = CLIENT
+        .get(comment.comment.url)
+        .header("Accept", "application/vnd.github.html+json")
+        .send()
+        .await?
+        .json::<InnerComment>()
+        .await?;
+
+    for mat in MEDIA.find_iter(&html_comment.body_html).take(9).dedup() {
         let url = mat.as_str();
         let name = match url.split("/").last() {
             Some(n) => n,
