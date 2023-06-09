@@ -10,7 +10,7 @@ use crate::{
 
 const HEADINGS: Lazy<Regex> = Lazy::new(|| Regex::new(r#"(^#{1,6})\s+(.+)"#).unwrap());
 const MEDIA: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"https?:\/\/[^`\n\s]+?\.(?:png|jpg|jpeg|webp|svg|mp4|gif)"#).unwrap()
+    Regex::new(r#"https?://(?:(?:github\.com/Discord-Datamining/Discord-Datamining/assets/\b(?:[-a-zA-Z0-9@:%_\+.~#?&/=]*))|(?:[^\n\s]+?\.(?:png|jpg|jpeg|webp|svg|mp4|gif)))"#).unwrap()
 });
 
 pub async fn handle(comment: Comment) -> Result<Response<Body>, Error> {
